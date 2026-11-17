@@ -16,7 +16,7 @@ Dari folder `D:\Mini Proyek`, buka terminal pertama untuk backend:
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 cd '.\Mini Proyek'
-python -m pip install -r requirements.txt
+python -m pip install -r ..\requirements.txt -r requirements-api.txt
 python manage.py migrate
 python manage.py runserver
 ```
@@ -34,7 +34,7 @@ Buka http://localhost:8501. Django API berjalan pada http://127.0.0.1:8000. Bila
 
 ## Deploy gratis: Django API di Vercel + Streamlit di Community Cloud
 
-Frontend Streamlit dan API Django dideploy sebagai dua layanan. Vercel hanya memasang Django dari `Mini Proyek/requirements-api.txt`, sedangkan Streamlit Community Cloud menggunakan `Mini Proyek/requirements.txt`. Pemisahan ini mencegah Vercel memasang Streamlit, pandas, dan pyarrow ke dalam fungsi API.
+Frontend Streamlit dan API Django dideploy sebagai dua layanan. Streamlit Community Cloud menggunakan `requirements.txt` di root repositori (tanpa path folder yang mengandung spasi), sedangkan Vercel hanya memasang Django dari `Mini Proyek/requirements-api.txt`. Pemisahan ini mencegah Vercel memasang Streamlit, pandas, dan pyarrow ke dalam fungsi API.
 
 ### 1. Deploy API Django ke Vercel
 
@@ -69,7 +69,7 @@ Frontend Streamlit dan API Django dideploy sebagai dua layanan. Vercel hanya mem
 
 4. Deploy aplikasi Streamlit. `DJANGO_API_URL` diambil dari Streamlit secrets; saat berjalan lokal, aplikasi tetap memakai `http://127.0.0.1:8000` secara default.
 
-Simpan `GROQ_API_KEY` hanya di environment variables Vercel, bukan di Streamlit Cloud, karena panggilan Groq dilakukan oleh backend Django. Streamlit Community Cloud dapat menemukan file `requirements.txt` yang berada bersama entrypoint di subfolder.
+Simpan `GROQ_API_KEY` hanya di environment variables Vercel, bukan di Streamlit Cloud, karena panggilan Groq dilakukan oleh backend Django. File dependensi Streamlit berada di root repositori, sehingga tidak perlu ditemukan melalui path `Mini Proyek/requirements.txt` yang mengandung spasi.
 
 Jika build Vercel masih memberi batas ukuran fungsi, pastikan Root Directory dan Install Command tepat serta tidak memilih `requirements.txt` utama untuk fungsi backend. Opsi Large Functions Vercel dapat menjadi alternatif, tetapi dependensi backend saja seharusnya menghindari paket ML/visualisasi yang sebelumnya memperbesar bundel.
 
