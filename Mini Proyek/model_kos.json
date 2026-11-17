@@ -1,0 +1,24 @@
+{
+  "algorithm": "Ridge Regression",
+  "features": [
+    "jarak_km",
+    "rating",
+    "ac"
+  ],
+  "means": [
+    2.32,
+    3.99
+  ],
+  "scales": [
+    1.275774274705365,
+    0.5412023651093923
+  ],
+  "coefficients": [
+    1053.40657325687,
+    -35.08753171150318,
+    13.915541928445183,
+    6.98591444956443
+  ],
+  "ridge_alpha": 1.0,
+  "target_unit": "ribu_rupiah_per_bulan"
+}
