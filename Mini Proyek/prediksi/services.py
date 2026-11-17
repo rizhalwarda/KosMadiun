@@ -1,6 +1,7 @@
 """Self-contained Ridge regression training and inference for kos prices."""
 import csv
 import json
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -84,7 +85,10 @@ def load_data_and_model():
         raise ValueError('Dataset perlu sedikitnya lima baris numerik yang valid.')
 
     model = _train(cleaned)
-    MODEL_PATH.write_text(json.dumps(model, indent=2), encoding='utf-8')
+    # Vercel's deployed source directory is read-only; the in-memory model is
+    # enough for serverless requests. Keep the JSON artifact for local runs.
+    if not os.environ.get('VERCEL'):
+        MODEL_PATH.write_text(json.dumps(model, indent=2), encoding='utf-8')
     return cleaned, model
 
 

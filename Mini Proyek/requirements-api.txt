@@ -1,0 +1,2 @@
+# Backend-only dependencies for the Django API on Vercel.
+Django>=5.2,<7.0

@@ -7,7 +7,14 @@ import streamlit as st
 
 
 st.set_page_config(page_title='KosMadiun | Estimasi kos', page_icon='🏡', layout='wide')
-API_BASE = os.environ.get('DJANGO_API_URL', 'http://127.0.0.1:8000').rstrip('/')
+try:
+    cloud_api_url = st.secrets.get('DJANGO_API_URL')
+except Exception:
+    # Streamlit raises when no local secrets.toml is configured.
+    cloud_api_url = None
+API_BASE = (cloud_api_url or os.environ.get(
+    'DJANGO_API_URL', 'http://127.0.0.1:8000'
+)).rstrip('/')
 if 'dark_theme' not in st.session_state:
     st.session_state.dark_theme = False
 
