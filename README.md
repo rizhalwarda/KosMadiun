@@ -39,7 +39,7 @@ Frontend Streamlit dan API Django dideploy sebagai dua layanan. Streamlit Commun
 ### 1. Deploy API Django ke Vercel
 
 1. Push proyek ke repositori GitHub.
-2. Import repositori tersebut ke Vercel. Atur **Root Directory** ke `Mini Proyek`.
+2. Import repositori tersebut ke Vercel. Atur **Root Directory** ke `Mini Proyek`. File `Mini Proyek/vercel.json` mengarahkan semua URL ke Django WSGI; pastikan file ini ikut ter-commit.
 3. Di **Project Settings → Build and Deployment**, isi **Install Command** dengan `pip install -r requirements-api.txt`.
 4. Tambahkan environment variables berikut di Vercel (Production, Preview, dan Development sesuai kebutuhan):
 
