@@ -1,3 +1,4 @@
 # Backend-only dependencies for the Django API on Vercel.
 Django>=5.2,<7.0
 python-dotenv>=1.0,<2.0
+python-dotenv>=1.0,<2.0
