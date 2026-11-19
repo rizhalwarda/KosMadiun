@@ -160,6 +160,7 @@ with left:
             st.session_state.pop('prediction', None)
             st.session_state.pop('prediction_chart', None)
             st.session_state.pop('explanation', None)
+            st.session_state.pop('explanation_source', None)
             st.session_state.pop('references', None)
             try:
                 response = requests.post(
@@ -175,6 +176,7 @@ with left:
                     st.session_state['prediction'] = data['harga_rupiah']
                     st.session_state['prediction_chart'] = data['chart_data']
                     st.session_state['explanation'] = data['explanation']
+                    st.session_state['explanation_source'] = data.get('explanation_source', 'unknown')
                     st.session_state['references'] = data['references']
             except requests.RequestException:
                 st.error('Tidak bisa menghubungi Django. Pastikan backend berjalan di port 8000.')
@@ -216,6 +218,11 @@ if st.session_state.get('prediction') is not None and st.session_state.get('expl
                 f'<div class="auto-explanation analysis-explanation"><strong>Penjelasan hasil</strong>{safe_explanation}</div>',
                 unsafe_allow_html=True,
             )
+            source_label = {
+                'groq': 'Dibuat oleh Groq',
+                'local': 'Penjelasan lokal (Groq tidak berhasil digunakan)',
+            }.get(st.session_state.get('explanation_source'), 'Sumber penjelasan tidak diketahui')
+            st.caption(source_label)
         st.markdown('<div class="analysis-bottom-space"></div>', unsafe_allow_html=True)
 
 references = st.session_state.get('references', [])

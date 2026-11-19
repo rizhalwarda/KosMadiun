@@ -49,7 +49,7 @@ Frontend Streamlit dan API Django dideploy sebagai dua layanan. Streamlit Commun
    | `DJANGO_DEBUG` | `False` |
    | `ALLOWED_HOSTS` | `.vercel.app` dan, bila ada, hostname domain sendiri dipisah koma |
    | `GROQ_API_KEY` | Opsional; secret Groq untuk membuat penjelasan AI |
-   | `GROQ_MODEL` | Opsional; misalnya `llama-3.3-70b-versatile` |
+   | `GROQ_MODEL` | Opsional; misalnya `openai/gpt-oss-120b` |
 
 5. Deploy. Salin URL deployment API Vercel, misalnya `https://nama-proyek.vercel.app`. Endpoint prediksi API tersedia di `/api/predict/`.
 
@@ -77,7 +77,7 @@ Penjelasan otomatis membahas grafik, hasil estimasi, serta tiga kos referensi da
 
 ```powershell
 $env:GROQ_API_KEY = 'gsk_...'
-$env:GROQ_MODEL = 'llama-3.3-70b-versatile'
+$env:GROQ_MODEL = 'openai/gpt-oss-120b'
 ```
 
 ## Pembagian tugas kelompok

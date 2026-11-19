@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
@@ -12,12 +13,16 @@ from .forms import PrediksiForm
 from .services import find_similar_kos, load_data_and_model, predict, price_chart
 
 
+logger = logging.getLogger(__name__)
+
+
 def beranda(request):
     form = PrediksiForm(request.POST or None)
     result = None
     result_display = None
     chart = ''
     explanation = None
+    explanation_source = None
     references = []
     count = 0
     error = None
@@ -42,7 +47,7 @@ def beranda(request):
                 rows, form.cleaned_data['jarak_km'], form.cleaned_data['ac'],
                 form.cleaned_data['rating'], result,
             )
-            explanation = _prediction_explanation(
+            explanation, explanation_source = _prediction_explanation(
                 rows, result, form.cleaned_data['jarak_km'],
                 form.cleaned_data['ac'], form.cleaned_data['rating'], references,
             )
@@ -51,6 +56,7 @@ def beranda(request):
     return render(request, 'prediksi/beranda.html', {
         'form': form, 'result': result, 'result_display': result_display, 'chart': chart,
         'jumlah_data': count, 'error': error, 'explanation': explanation,
+        'explanation_source': explanation_source,
         'references': references,
     })
 
@@ -80,14 +86,16 @@ def jelaskan_grafik(request):
                 'merangkum data sampel dan bukan kepastian harga.'
             ), 'source': 'local'})
         payload = json.dumps({
-            'model': os.environ.get('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+            'model': os.environ.get('GROQ_MODEL', 'openai/gpt-oss-120b'),
             'messages': [{'role': 'user', 'content': prompt}],
-            'temperature': 0.3, 'max_tokens': 180,
+            'temperature': 0.3, 'max_tokens': 700,
+            'reasoning_effort': 'low', 'include_reasoning': False,
         }).encode('utf-8')
         req = urllib.request.Request(
             'https://api.groq.com/openai/v1/chat/completions', data=payload,
             headers={'Authorization': f'Bearer {api_key}',
-                     'Content-Type': 'application/json'}, method='POST',
+                     'Content-Type': 'application/json',
+                     'User-Agent': 'KosMadiun/1.0'}, method='POST',
         )
         with urllib.request.urlopen(req, timeout=20) as response:
             answer = json.loads(response.read().decode('utf-8'))
@@ -122,13 +130,14 @@ def api_prediksi(request):
         price, rows = predict(jarak, ac, rating)
         chart_data = _chart_points(rows, (jarak, price))
         references = _reference_items(rows, jarak, ac, rating, price)
-        explanation = _prediction_explanation(rows, price, jarak, ac, rating, references)
+        explanation, explanation_source = _prediction_explanation(rows, price, jarak, ac, rating, references)
         return JsonResponse({
             'harga_ribu': round(price, 2),
             'harga_rupiah': round(price * 1000),
             'jumlah_data': len(rows),
             'chart_data': chart_data,
             'explanation': explanation,
+            'explanation_source': explanation_source,
             'references': references,
         })
     except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
@@ -228,7 +237,8 @@ def _prediction_explanation(rows, price, distance, ac, rating, references):
 def _generate_ai_explanation(fallback, rows, price, distance, ac, rating, references):
     api_key = os.environ.get('GROQ_API_KEY')
     if not api_key:
-        return fallback
+        logger.warning('Groq explanation fallback: GROQ_API_KEY is not configured.')
+        return fallback, 'local'
     details = {
         'jumlah_data': len(rows),
         'input': {'jarak_km': distance, 'ac': ac, 'rating': rating},
@@ -255,25 +265,45 @@ def _generate_ai_explanation(fallback, rows, price, distance, ac, rating, refere
         f'Gunakan hanya data ini: {json.dumps(details, ensure_ascii=False)}'
     )
     payload = json.dumps({
-        'model': os.environ.get('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+        'model': os.environ.get('GROQ_MODEL', 'openai/gpt-oss-120b'),
         'messages': [
             {'role': 'system', 'content': 'Anda menjelaskan hasil analisis data kos secara akurat dan mudah dipahami.'},
             {'role': 'user', 'content': prompt},
         ],
-        'temperature': 0.2, 'max_tokens': 190,
+        'temperature': 0.2, 'max_tokens': 700,
+        'reasoning_effort': 'low', 'include_reasoning': False,
     }).encode('utf-8')
     req = urllib.request.Request(
         'https://api.groq.com/openai/v1/chat/completions', data=payload,
-        headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+        headers={'Authorization': f'Bearer {api_key}',
+                 'Content-Type': 'application/json',
+                 'User-Agent': 'KosMadiun/1.0'},
         method='POST',
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as response:
             answer = json.loads(response.read().decode('utf-8'))
-        return answer['choices'][0]['message']['content'].strip() or fallback
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError,
-            ValueError, KeyError, IndexError):
-        return fallback
+        message = answer['choices'][0]['message']
+        explanation = (message.get('content') or '').strip()
+        if not explanation:
+            choice = answer['choices'][0]
+            logger.warning(
+                'Groq explanation fallback: API returned empty content '
+                '(finish_reason=%s, reasoning_present=%s).',
+                choice.get('finish_reason'), bool(message.get('reasoning')),
+            )
+            return fallback, 'local'
+        return explanation, 'groq'
+    except urllib.error.HTTPError as exc:
+        try:
+            error_body = exc.read().decode('utf-8', errors='replace')[:1000]
+        except OSError:
+            error_body = '(response body unavailable)'
+        logger.error('Groq explanation request failed with HTTP %s: %s', exc.code, error_body)
+        return fallback, 'local'
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError, IndexError):
+        logger.exception('Groq explanation request failed; using local fallback.')
+        return fallback, 'local'
 
 
 def _group_prices(rows):
