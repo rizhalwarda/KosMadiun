@@ -58,7 +58,7 @@ Frontend Streamlit dan API Django dideploy sebagai dua layanan. Streamlit Commun
 ### 2. Deploy frontend Streamlit Community Cloud
 
 1. Buat aplikasi baru di [Streamlit Community Cloud](https://share.streamlit.io/) dari repositori yang sama.
-2. Pilih branch yang digunakan, lalu isi **Main file path** dengan `Mini Proyek/app.py`.
+2. Pilih branch yang digunakan, lalu isi **Main file path** dengan `app.py` di root repositori. Entry point root ini meneruskan eksekusi ke `Mini Proyek/app.py`, agar Streamlit memakai `requirements.txt` root tanpa memproses path dependensi yang mengandung spasi.
 3. Di pengaturan **Secrets** aplikasi, isi:
 
    ```toml
